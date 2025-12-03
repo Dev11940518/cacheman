@@ -24,7 +24,7 @@ jobs:
           echo "Generating $filename..."
           
           # Generate exactly one 1GB file for this job
-          dd if=/dev/zero of="$filename" bs=1M count=1024 status=none
+          dd if=/dev/random of="$filename" bs=1M count=1024 status=none
           
           echo "File generated:"
           ls -lh "$filename"
