@@ -1,0 +1,38 @@
+name: Generate and Cache Large Files
+
+on: 
+  workflow_dispatch:
+
+jobs:
+  generate-and-cache:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Output Directory
+        run: mkdir -p generated-data
+
+      - name: Generate 12 Files (1GB each)
+        run: |
+          echo "Starting generation of 12GB of data..."
+          
+          # Use standard bash tools to generate data
+          # 'yes A' outputs 'A\n' repeatedly
+          # 'tr -d' removes the newlines
+          # 'head -c 1G' limits the output to 1 Gigabyte
+          # LC_ALL=C improves 'tr' performance by treating input as raw bytes
+          
+          for i in {1..12}; do
+            echo "Generating generated-data/file_$i.txt..."
+            yes A | LC_ALL=C tr -d '\n' | head -c 1G > "generated-data/file_$i.txt"
+          done
+
+          echo "Generation complete."
+          ls -lh generated-data/
+
+      - name: Cache Data
+        uses: actions/cache@v4
+        id: cache-large-files
+        with:
+          path: generated-data
+          # We use run_id to ensure a unique key, forcing a save every time 
+          # (since the content is generated fresh).
+          key: large-files-cache-${{ github.run_id }}
