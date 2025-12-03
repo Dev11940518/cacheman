@@ -6,33 +6,34 @@ on:
 jobs:
   generate-and-cache:
     runs-on: ubuntu-latest
+    strategy:
+      # This creates 12 separate jobs, one for each number.
+      # Each job runs on a fresh machine, preventing disk space issues.
+      matrix:
+        file_index: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+      # Optional: Remove this line if you want them to run in parallel (faster).
+      # max-parallel: 1 
+
     steps:
       - name: Create Output Directory
         run: mkdir -p generated-data
 
-      - name: Generate 12 Files (1GB each)
+      - name: Generate Single File (1GB)
         run: |
-          echo "Starting generation of 12GB of data..."
+          filename="generated-data/file_${{ matrix.file_index }}.txt"
+          echo "Generating $filename..."
           
-          # Use standard bash tools to generate data
-          # 'yes A' outputs 'A\n' repeatedly
-          # 'tr -d' removes the newlines
-          # 'head -c 1G' limits the output to 1 Gigabyte
-          # LC_ALL=C improves 'tr' performance by treating input as raw bytes
+          # Generate exactly one 1GB file for this job
+          dd if=/dev/zero of="$filename" bs=1M count=1024 status=none
           
-          for i in {1..12}; do
-            echo "Generating generated-data/file_$i.txt..."
-            yes A | LC_ALL=C tr -d '\n' | head -c 1G > "generated-data/file_$i.txt"
-          done
+          echo "File generated:"
+          ls -lh "$filename"
 
-          echo "Generation complete."
-          ls -lh generated-data/
-
-      - name: Cache Data
-        uses: actions/cache@v4
-        id: cache-large-files
+      - name: Cache Single File
+        # We use 'save' specifically since we are creating new data
+        uses: actions/cache/save@v4
+        id: cache-large-file
         with:
-          path: generated-data
-          # We use run_id to ensure a unique key, forcing a save every time 
-          # (since the content is generated fresh).
-          key: large-files-cache-${{ github.run_id }}
+          path: generated-data/file_${{ matrix.file_index }}.txt
+          # Unique key for this specific file
+          key: large-file-cache-${{ github.run_id }}-${{ matrix.file_index }}
